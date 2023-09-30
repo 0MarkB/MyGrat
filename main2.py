@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 
 
-# Define the role_pool_points dictionary
+# Define the role_pool_points dictionary.
 role_pool_points = {
     'Head Bartender': 1.25,
     'Bartender': 1,
