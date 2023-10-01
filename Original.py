@@ -1,9 +1,14 @@
+# This is a sample Python script.
+
+# Press Shift+F10 to execute it or replace it with your code.
+# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+
+# Complete Integrated Code
+
 import pandas as pd
 from datetime import datetime, timedelta
 
-
-
-# Define the role_pool_points dictionary.
+# Define the role_pool_points dictionary
 role_pool_points = {
     'Head Bartender': 1.25,
     'Bartender': 1,
@@ -19,16 +24,6 @@ role_pool_points = {
     'Manager': 0,
     'Training': 0
 }
-
-def try_parsing_date(text):
-    """Try parsing a date string using multiple formats."""
-    for fmt in ('%m/%d/%Y %H:%M', '%m/%d/%y %I:%M %p'):
-        try:
-            return datetime.strptime(text, fmt)
-        except ValueError:
-            pass
-    raise ValueError(f'time data {text} does not match any of the expected formats')
-
 
 
 def read_csv_data(filename):
@@ -52,20 +47,17 @@ def write_excel_data(filename, data, sheet_name):
 
 def determine_pool(timestamp_str):
     """Determines which pool (Lunch or Dinner) an order belongs to."""
-    timestamp = try_parsing_date(timestamp_str)
+    timestamp = datetime.strptime(timestamp_str, "%m/%d/%Y %H:%M")
     if 6 <= timestamp.hour < 17:
         return "Lunch"
     else:
         return "Dinner"
 
 
-
-from datetime import timedelta
-
 def calculate_hours_in_pool(in_date_str, out_date_str):
     """Calculates hours worked in each pool for a given time entry."""
-    in_date = try_parsing_date(in_date_str)
-    out_date = try_parsing_date(out_date_str)
+    in_date = datetime.strptime(in_date_str, "%m/%d/%Y %H:%M")
+    out_date = datetime.strptime(out_date_str, "%m/%d/%Y %H:%M")
 
     # Handle cases where out_date is on the next day (e.g., shift crossing midnight)
     if out_date < in_date:
@@ -80,7 +72,6 @@ def calculate_hours_in_pool(in_date_str, out_date_str):
     dinner_hours = max(min(out_date, dinner_end) - max(in_date, dinner_start), timedelta(0)).total_seconds() / 3600
 
     return lunch_hours, dinner_hours
-
 
 
 def distribute_tips_among_employees(tip_pool, hours_per_employee, role_pool_points, time_entries_df):
