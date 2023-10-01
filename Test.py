@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 
 def parse_datetime(timestamp_str):
-    """Attempt to parse datetime with multiple formats.abcdefghij"""
+    """Attempt to parse datetime with multiple formats."""
     formats = ["%m/%d/%Y %H:%M", "%m/%d/%y %I:%M %p"]
 
     for fmt in formats:
