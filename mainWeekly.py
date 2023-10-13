@@ -20,7 +20,6 @@ role_pool_points = {
 
 
 def try_parsing_date(text):
-    """Try parsing a date string using multiple formats."""
     for fmt in ('%m/%d/%Y %H:%M', '%m/%d/%y %I:%M %p'):
         try:
             return datetime.strptime(text, fmt)
@@ -30,24 +29,23 @@ def try_parsing_date(text):
 
 
 def read_csv_data(filename):
-    """Reads data from a CSV file."""
     try:
         df = pd.read_csv(filename)
-        return df
+        return df, None  # Returning None as the second value to indicate no error
     except Exception as e:
-        print(f"Error reading CSV file: {e}")
-        return None
+        return None, str(e)  # Returning the error message as the second value
+
 
 def write_excel_data(filename, data, sheet_name):
-    """Writes data to an Excel file."""
     try:
         df = pd.DataFrame(data)
         df.to_excel(filename, sheet_name=sheet_name, engine='openpyxl', index=False)
+        return None  # Returning None to indicate no error
     except Exception as e:
-        print(f"Error writing to Excel file: {e}")
+        return str(e)  # Returning the error message
+
 
 def determine_pool(timestamp_str):
-    """Determines which pool (Lunch or Dinner) an order belongs to."""
     timestamp = try_parsing_date(timestamp_str)
     if 6 <= timestamp.hour < 17:
         return "Lunch"
@@ -56,23 +54,6 @@ def determine_pool(timestamp_str):
 
 
 def calculate_hours_in_pool(in_date_str, out_date_str):
-    """Calculates hours worked in each pool for a given time entry."""
-    in_date = try_parsing_date(in_date_str)
-    out_date = try_parsing_date(out_date_str)
-    if out_date < in_date:
-        out_date += timedelta(days=1)
-    lunch_start = in_date.replace(hour=6, minute=0)
-    lunch_end = in_date.replace(hour=16, minute=59)
-    dinner_start = in_date.replace(hour=17, minute=0)
-    dinner_end = in_date.replace(hour=5, minute=59) + timedelta(days=1)
-    lunch_hours = max(min(out_date, lunch_end) - max(in_date, lunch_start), timedelta(0)).total_seconds() / 3600
-    dinner_hours = max(min(out_date, dinner_end) - max(in_date, dinner_start), timedelta(0)).total_seconds() / 3600
-    return lunch_hours, dinner_hours
-
-
-
-def calculate_hours_in_pool(in_date_str, out_date_str):
-    """Calculates hours worked in each pool for a given time entry."""
     in_date = try_parsing_date(in_date_str)
     out_date = try_parsing_date(out_date_str)
     if out_date < in_date:
@@ -87,7 +68,6 @@ def calculate_hours_in_pool(in_date_str, out_date_str):
 
 
 def process_orders_for_week(filename):
-    """Processes the Orders.csv file and returns aggregated tips for Lunch and Dinner for each day."""
     df = pd.read_csv(filename)
     df['Date'] = df['Opened'].apply(lambda x: try_parsing_date(x).date())
     df['Pool'] = df['Opened'].apply(determine_pool)
@@ -112,19 +92,15 @@ def process_time_entries_for_week(filename):
 def distribute_tips_for_day(date, pool, tip_pool, hours_per_employee, role_pool_points, time_entries_df):
     total_tip_pool = tip_pool * 0.965
 
-    # Filtering only employees who worked on that day and shift
     working_employees = [employee for (day, employee), hours in hours_per_employee.items() if day == date and hours > 0]
 
-    # Calculating the total weighted contribution for the filtered employees
     total_weighted_contribution = sum(
         [hours_per_employee.get((date, employee), 0) * role_pool_points.get(
             time_entries_df[time_entries_df['Employee'] == employee]['Job Title'].values[0], 0)
          for employee in working_employees])
 
-    # Calculating value per point
     value_per_point = total_tip_pool / total_weighted_contribution if total_weighted_contribution != 0 else 0
 
-    # Calculating each employee's cut for the day and shift
     daily_cuts = {}
     for employee in working_employees:
         job_title = time_entries_df[time_entries_df['Employee'] == employee]['Job Title'].values[0]
@@ -147,29 +123,4 @@ def distribute_tips_among_employees_for_week(tip_pools, lunch_hours_per_employee
 
     return employee_weekly_cuts
 
-
-def main_interactive_weekly():
-    try:
-        orders_file_path = input("Enter the path to your Orders.csv file: ")
-        weekly_tip_pools = process_orders_for_week(orders_file_path)
-
-        time_entries_file_path = input("Enter the path to your TimeEntries.csv file: ")
-        lunch_hours_per_week, dinner_hours_per_week = process_time_entries_for_week(time_entries_file_path)
-
-        time_entries_df = read_csv_data(time_entries_file_path)
-
-        employee_weekly_cuts = distribute_tips_among_employees_for_week(weekly_tip_pools, lunch_hours_per_week,
-                                                                        dinner_hours_per_week, role_pool_points,
-                                                                        time_entries_df)
-
-        output_data = [{"Employee": key, "Weekly Tips": value} for key, value in employee_weekly_cuts.items()]
-
-        output_file = 'employee_weekly_results.xlsx'
-        write_excel_data(output_file, output_data, 'EmployeeWeeklyCuts')
-
-        print(f"Employee weekly cuts have been saved to {output_file}.")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
-if __name__ == '__main__':
-    main_interactive_weekly()
+# The main function is not needed since the logic will now be driven by GUI interactions.
