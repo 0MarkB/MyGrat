@@ -68,7 +68,13 @@ def calculate_hours_in_pool(in_date_str, out_date_str):
 
 
 def process_orders_for_week(filename):
+    """Processes the Orders.csv file and returns aggregated tips for Lunch and Dinner for each day."""
     df = pd.read_csv(filename)
+
+    # Check if 'Opened' column exists in the dataframe
+    if 'Opened' not in df.columns:
+        raise ValueError("The 'Opened' column is missing in the Orders.csv file. Please check the file.")
+
     df['Date'] = df['Opened'].apply(lambda x: try_parsing_date(x).date())
     df['Pool'] = df['Opened'].apply(determine_pool)
 

@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox
 import sys
+import traceback
 
-from ui_mainwindow import Ui_MainWindow  # Importing your UI class
+from MyGratMain import Ui_MainWindow  # Importing your UI class
 
 # Import your logic functions here
 from mainWeekly import (
@@ -33,14 +34,14 @@ class MyApp(QMainWindow, Ui_MainWindow):
         filepath, _ = QFileDialog.getOpenFileName(self, "Select Time Entries CSV File", "",
                                                   "CSV files (*.csv);;All files (*)")
         if filepath:
-            self.orders_file_path = filepath
+            self.time_entries_file_path = filepath  # Fixed here
             self.statusbar.showMessage("Time entries file uploaded successfully!")
 
     def upload_orders(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Select Orders CSV File", "",
                                                   "CSV files (*.csv);;All files (*)")
         if filepath:
-            self.time_entries_file_path = filepath
+            self.orders_file_path = filepath  # Fixed here
             self.statusbar.showMessage("Orders file uploaded successfully!")
 
     def distribute_tips_weekly(self):
@@ -58,7 +59,8 @@ class MyApp(QMainWindow, Ui_MainWindow):
             )
             self.statusbar.showMessage("Tips distributed successfully!")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+            error_message = f"An error occurred: {str(e)}\n\n{traceback.format_exc()}"
+            self.ErrorTracebackBox.setText(error_message)
 
     def save_results(self):
         try:
@@ -67,7 +69,8 @@ class MyApp(QMainWindow, Ui_MainWindow):
             write_excel_data(output_file, output_data, 'EmployeeWeeklyCuts')
             self.statusbar.showMessage(f"Employee weekly cuts have been saved to {output_file}.")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+            error_message = f"An error occurred: {str(e)}\n\n{traceback.format_exc()}"
+            self.ErrorTracebackBox.setText(error_message)
 
 
 if __name__ == "__main__":
