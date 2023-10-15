@@ -48,7 +48,9 @@ class MyApp(QMainWindow, Ui_MainWindow):
         try:
             weekly_tip_pools = process_orders_for_week(self.orders_file_path)
             lunch_hours_per_week, dinner_hours_per_week = process_time_entries_for_week(self.time_entries_file_path)
-            time_entries_df = read_csv_data(self.time_entries_file_path)
+            time_entries_df, error_msg = read_csv_data(self.time_entries_file_path)
+            if error_msg:
+                raise Exception(error_msg)
 
             self.employee_weekly_cuts = distribute_tips_among_employees_for_week(
                 weekly_tip_pools,

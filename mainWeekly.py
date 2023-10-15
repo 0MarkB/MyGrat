@@ -98,27 +98,36 @@ def process_time_entries_for_week(filename):
 def distribute_tips_for_day(date, pool, tip_pool, hours_per_employee, role_pool_points, time_entries_df):
     total_tip_pool = tip_pool * 0.965
 
+    # Filtering only employees who worked on that day and shift
     working_employees = [employee for (day, employee), hours in hours_per_employee.items() if day == date and hours > 0]
 
+    # Calculating the total weighted contribution for the filtered employees
     total_weighted_contribution = sum(
         [hours_per_employee.get((date, employee), 0) * role_pool_points.get(
-            time_entries_df[time_entries_df['Employee'] == employee]['Job Title'].values[0], 0)
+            time_entries_df.loc[time_entries_df['Employee'] == employee, 'Job Title'].values[0], 0)
          for employee in working_employees])
 
+    # Calculating value per point
     value_per_point = total_tip_pool / total_weighted_contribution if total_weighted_contribution != 0 else 0
 
+    # Calculating each employee's cut for the day and shift
     daily_cuts = {}
     for employee in working_employees:
-        job_title = time_entries_df[time_entries_df['Employee'] == employee]['Job Title'].values[0]
-        daily_cuts[employee] = hours_per_employee.get((date, employee), 0) * role_pool_points.get(job_title,
-                                                                                                  0) * value_per_point
+        job_title = time_entries_df.loc[time_entries_df['Employee'] == employee, 'Job Title'].values[0]
+        daily_cuts[employee] = hours_per_employee.get((date, employee), 0) * role_pool_points.get(job_title, 0) * value_per_point
 
     return daily_cuts
 
 
 def distribute_tips_among_employees_for_week(tip_pools, lunch_hours_per_employee, dinner_hours_per_employee,
-                                             role_pool_points, time_entries_df):
+                                             role_pool_points, time_entries_file_path):
     employee_weekly_cuts = {}
+
+    # Read the time entries data into a DataFrame
+    time_entries_df, error_msg = read_csv_data(time_entries_file_path)
+    if error_msg:
+        # Handle the error here, perhaps by raising an exception or returning
+        raise Exception(error_msg)
 
     for (date, pool), tip_pool in tip_pools.items():
         daily_cuts = distribute_tips_for_day(date, pool, tip_pool,
