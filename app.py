@@ -35,14 +35,14 @@ class MyApp(QMainWindow, Ui_MainWindow):
                                                   "CSV files (*.csv);;All files (*)")
         if filepath:
             self.time_entries_file_path = filepath  # Fixed here
-            self.statusbar.showMessage("Time entries file uploaded successfully!")
+            self.label_6.setText("Time entries file uploaded successfully!")
 
     def upload_orders(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Select Orders CSV File", "",
                                                   "CSV files (*.csv);;All files (*)")
         if filepath:
             self.orders_file_path = filepath  # Fixed here
-            self.statusbar.showMessage("Orders file uploaded successfully!")
+            self.label_6.setText("Orders file uploaded successfully!")
 
     def distribute_tips_weekly(self):
         try:
@@ -62,7 +62,7 @@ class MyApp(QMainWindow, Ui_MainWindow):
                 role_pool_points,
                 time_entries_df
             )
-            self.statusbar.showMessage("Tips distributed successfully!")
+            self.label_6.setText("Tips distributed successfully!")
         except Exception as e:
             error_message = f"An error occurred: {str(e)}\n\n{traceback.format_exc()}"
             self.ErrorTracebackBox.setText(error_message)
@@ -72,7 +72,7 @@ class MyApp(QMainWindow, Ui_MainWindow):
             output_data = [{"Employee": key, "Weekly Tips": value} for key, value in self.employee_weekly_cuts.items()]
             output_file = 'employee_weekly_results.xlsx'
             write_excel_data(output_file, output_data, 'EmployeeWeeklyCuts')
-            self.statusbar.showMessage(f"Employee weekly cuts have been saved to {output_file}.")
+            self.label_6.setText(f"Employee weekly cuts have been saved to {output_file}.")
         except Exception as e:
             error_message = f"An error occurred: {str(e)}\n\n{traceback.format_exc()}"
             self.ErrorTracebackBox.setText(error_message)
