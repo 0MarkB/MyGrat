@@ -102,13 +102,14 @@ class MyApp(QMainWindow, Ui_MainWindow):
     def save_results(self):
         try:
             # Extract date range from the time entries data
-            in_dates = self.time_entries_df['In Date'].apply(lambda x: datetime.strptime(x.split()[0], "%m/%d/%Y").date())
-            start_date = min(in_dates)
-            end_date = max(in_dates)
+            in_dates = self.time_entries_df['In Date'].apply(
+                lambda x: datetime.strptime(x.split()[0], "%m/%d/%Y").date())
+            start_date = min(in_dates).strftime('%m-%d-%Y')
+            end_date = max(in_dates).strftime('%m-%d-%Y')
+            current_time = datetime.now().strftime('Created%m-%d-%Y_%Hh.%Mm.%Ss')
 
             # Format the filename
-            current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"PayrollResults_{start_date}to{end_date}_{current_time}.xlsx"
+            filename = f"PayrollResults_{start_date}_to_{end_date}_{current_time}.xlsx"
             output_file_path = os.path.join(os.path.expanduser("~"), "Downloads", filename)
 
             # Write data to Excel
