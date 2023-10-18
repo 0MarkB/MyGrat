@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox, QTableWidgetItem
 import sys
 import traceback
+import os
+from datetime import datetime
 
 from MyGratMain import Ui_MainWindow  # Importing your UI class
 from ResultWindow import Ui_ResultWindow  # Importing your Result Window
@@ -14,6 +16,7 @@ from mainWeekly import (
     read_csv_data,
     role_pool_points
 )
+
 
 
 class ResultsDialog(QMainWindow, Ui_ResultWindow):
@@ -52,6 +55,11 @@ class MyApp(QMainWindow, Ui_MainWindow):
                                                   "CSV files (*.csv);;All files (*)")
         if filepath:
             self.time_entries_file_path = filepath
+            # Read the CSV and store it as an attribute
+            self.time_entries_df, error_msg = read_csv_data(filepath)
+            if error_msg:
+                self.ErrorTracebackBox.setText(error_msg)
+                return
             self.statusbar.showMessage("Time entries file uploaded successfully!")
 
     def upload_orders(self):
@@ -93,10 +101,31 @@ class MyApp(QMainWindow, Ui_MainWindow):
 
     def save_results(self):
         try:
+            # Extract date range from the time entries data
+            in_dates = self.time_entries_df['In Date'].apply(lambda x: datetime.strptime(x.split()[0], "%m/%d/%Y").date())
+            start_date = min(in_dates)
+            end_date = max(in_dates)
+
+            # Format the filename
+            current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"PayrollResults_{start_date}to{end_date}_{current_time}.xlsx"
+            output_file_path = os.path.join(os.path.expanduser("~"), "Downloads", filename)
+
+            # Write data to Excel
             output_data = [{"Employee": key, "Weekly Tips": value} for key, value in self.employee_weekly_cuts.items()]
-            output_file = 'employee_weekly_results.xlsx'
-            write_excel_data(output_file, output_data, 'EmployeeWeeklyCuts')
-            self.statusbar.showMessage(f"Employee weekly cuts have been saved to {output_file}.")
+            write_excel_data(output_file_path, output_data, 'EmployeeWeeklyCuts')
+
+            # Open the file with default application
+            os.startfile(output_file_path)
+
+            self.statusbar.showMessage(
+                f"Employee weekly cuts have been saved to {filename} in the Downloads directory.")
+        except PermissionError:
+            error_message = "Permission denied: Unable to save file to Downloads directory."
+            self.ErrorTracebackBox.setText(error_message)
+        except FileNotFoundError:
+            error_message = "Excel application not found. The file has been saved, but couldn't be opened automatically."
+            self.ErrorTracebackBox.setText(error_message)
         except Exception as e:
             error_message = f"An error occurred: {str(e)}\n\n{traceback.format_exc()}"
             self.ErrorTracebackBox.setText(error_message)
