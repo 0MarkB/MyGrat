@@ -132,7 +132,6 @@ class MyApp(QMainWindow, Ui_MainWindow):
         except Exception as e:
             error_message = f"An error occurred: {str(e)}\n\n{traceback.format_exc()}"
             self.ErrorTracebackBox.setText(error_message)
-6
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
