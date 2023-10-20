@@ -17,6 +17,13 @@ from mainWeekly import (
     role_pool_points
 )
 
+def try_parsing_date(text):
+    for fmt in ('%m/%d/%Y', '%m/%d/%y'):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            pass
+    raise ValueError(f'time data {text} does not match any of the expected formats')
 
 
 class ResultsDialog(QMainWindow, Ui_ResultWindow):
@@ -101,36 +108,31 @@ class MyApp(QMainWindow, Ui_MainWindow):
 
     def save_results(self):
         try:
-            # Extract date range from the time entries data
+            # Extract in-dates from the time entries dataframe
             in_dates = self.time_entries_df['In Date'].apply(
-                lambda x: datetime.strptime(x.split()[0], "%m/%d/%Y").date())
-            start_date = min(in_dates).strftime('%m-%d-%Y')
-            end_date = max(in_dates).strftime('%m-%d-%Y')
-            current_time = datetime.now().strftime('Created%m-%d-%Y_%Hh.%Mm.%Ss')
+                lambda x: try_parsing_date(x.split()[0]))
 
-            # Format the filename
-            filename = f"PayrollResults_{start_date}_to_{end_date}_{current_time}.xlsx"
-            output_file_path = os.path.join(os.path.expanduser("~"), "Downloads", filename)
+            # Extract the start and end dates
+            start_date = min(in_dates)
+            end_date = max(in_dates)
 
-            # Write data to Excel
+            # Create the filename with the desired format
+            file_name = f"PayrollResults_{start_date.strftime('%m-%d-%Y')}_to_{end_date.strftime('%m-%d-%Y')}_Created{datetime.now().strftime('%m-%d-%Y_%Hh.%Mm.%Ss')}.xlsx"
+            output_path = os.path.join(os.path.expanduser("~"), "Downloads", file_name)
+
+            # Save the data to the Excel file
             output_data = [{"Employee": key, "Weekly Tips": value} for key, value in self.employee_weekly_cuts.items()]
-            write_excel_data(output_file_path, output_data, 'EmployeeWeeklyCuts')
+            write_excel_data(output_path, output_data, 'EmployeeWeeklyCuts')
 
-            # Open the file with default application
-            os.startfile(output_file_path)
+            # Automatically open the file using the default application
+            os.startfile(output_path)
 
-            self.statusbar.showMessage(
-                f"Employee weekly cuts have been saved to {filename} in the Downloads directory.")
-        except PermissionError:
-            error_message = "Permission denied: Unable to save file to Downloads directory."
-            self.ErrorTracebackBox.setText(error_message)
-        except FileNotFoundError:
-            error_message = "Excel application not found. The file has been saved, but couldn't be opened automatically."
-            self.ErrorTracebackBox.setText(error_message)
+            self.statusbar.showMessage(f"Employee weekly cuts have been saved to {output_path}.")
+
         except Exception as e:
             error_message = f"An error occurred: {str(e)}\n\n{traceback.format_exc()}"
             self.ErrorTracebackBox.setText(error_message)
-
+6
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
