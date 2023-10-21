@@ -124,7 +124,8 @@ class MyApp(QMainWindow, Ui_MainWindow):
                 point_system,  # Passing the chosen point system
                 time_entries_df
             )
-            self.statusbar.showMessage("Tips distributed successfully!")
+            self.label_6.setText("Tips distributed successfully!")
+            self.progressBar.setValue(100)
         except Exception as e:
             error_message = f"An error occurred: {str(e)}\n\n{traceback.format_exc()}"
             self.ErrorTracebackBox.setText(error_message)
