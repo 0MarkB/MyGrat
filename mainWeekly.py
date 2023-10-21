@@ -1,23 +1,45 @@
 import pandas as pd
 from datetime import datetime, timedelta
 
-# Define the role_pool_points dictionary
-role_pool_points = {
-    'Head Bartender': 1.25,
-    'Bartender': 1,
-    'Captain': 1,
-    'Expeditor': 1,
-    'Server': 1,
-    'Head Barback': 0.7,
-    'Runner': 0.7,
-    'Barback': 0.5,
-    'Busser': 0.5,
-    'Maitre\'D': 0.2,
-    'General Manager': 0,
-    'Manager': 0,
-    'Training': 0
+# New: Define the different point systems
+POINT_SYSTEMS = {
+    "Mocha Red": {
+        'Head Bartender': 1.25,
+        'Bartender': 1,
+        'Captain': 1,
+        'Expeditor': 1,
+        'Server': 1,
+        'Head Barback': 0.7,
+        'Runner': 0.7,
+        'Barback': 0.5,
+        'Busser': 0.5,
+        'Maitre\'D': 0.2,
+        'General Manager': 0,
+        'Manager': 0,
+        'Training': 0
+    },
+    "Mocha Lux": {
+        'Captain': 8,
+        'Lead Bartender': 8,
+        'Bartender': 6,
+        'Server': 6,
+        'Expeditor': 5,
+        'Runner': 4,
+        'Barback': 3.5,
+        'Busser': 3.5,
+        'Polisher': 2,
+        'Beverage Manager': 0,
+        'General Manager': 0,
+        'GeneralManager': 0,
+        'Host': 0,
+        'OLO_GS': 0,
+        'Shift Manager / Assistant Manager': 0,
+        'Training': 0
+    }
 }
 
+# Reference the default system for backward compatibility
+role_pool_points = POINT_SYSTEMS["Mocha Red"]
 
 def try_parsing_date(text):
     for fmt in ('%m/%d/%Y %H:%M', '%m/%d/%y %I:%M %p'):
@@ -94,7 +116,7 @@ def process_time_entries_for_week(filename):
     return lunch_hours_per_day, dinner_hours_per_day
 
 
-def distribute_tips_for_day(date, pool, tip_pool, hours_per_employee, role_pool_points, time_entries_df):
+def distribute_tips_for_day(date, pool, tip_pool, hours_per_employee, point_system, time_entries_df):
     total_tip_pool = tip_pool * 0.965
 
     # Filtering only employees who worked on that day and shift
@@ -113,19 +135,18 @@ def distribute_tips_for_day(date, pool, tip_pool, hours_per_employee, role_pool_
     daily_cuts = {}
     for employee in working_employees:
         job_title = time_entries_df.loc[time_entries_df['Employee'] == employee, 'Job Title'].values[0]
-        daily_cuts[employee] = hours_per_employee.get((date, employee), 0) * role_pool_points.get(job_title, 0) * value_per_point
-
+        daily_cuts[employee] = hours_per_employee.get((date, employee), 0) * point_system.get(job_title,
+                                                                                              0) * value_per_point
     return daily_cuts
 
 
-def distribute_tips_among_employees_for_week(tip_pools, lunch_hours_per_employee, dinner_hours_per_employee,
-                                             role_pool_points, time_entries_df):
+def distribute_tips_among_employees_for_week(tip_pools, lunch_hours_per_employee, dinner_hours_per_employee, point_system, time_entries_df):
     employee_weekly_cuts = {}
 
     for (date, pool), tip_pool in tip_pools.items():
         daily_cuts = distribute_tips_for_day(date, pool, tip_pool,
                                              lunch_hours_per_employee if pool == 'Lunch' else dinner_hours_per_employee,
-                                             role_pool_points, time_entries_df)
+                                             point_system, time_entries_df)
         for employee, cut in daily_cuts.items():
             employee_weekly_cuts[employee] = employee_weekly_cuts.get(employee, 0) + cut
 

@@ -14,7 +14,7 @@ from mainWeekly import (
     distribute_tips_among_employees_for_week,
     write_excel_data,
     read_csv_data,
-    role_pool_points
+    role_pool_points, POINT_SYSTEMS
 )
 
 def try_parsing_date(text):
@@ -46,6 +46,13 @@ class MyApp(QMainWindow, Ui_MainWindow):
         super(MyApp, self).__init__()
         self.setupUi(self)
 
+        # Initialization of the point system dropdown and table
+        self.pointSystemDropdown.setCurrentIndex(0)  # Select the first item in the dropdown by default
+        self.update_point_system_table()  # Call the function to populate the table
+
+        # Connecting the dropdown's currentIndexChanged signal to the function
+        self.pointSystemDropdown.currentIndexChanged.connect(self.update_point_system_table)
+
         # Connecting buttons to methods
         self.pushButton.clicked.connect(self.upload_time_entries)
         self.pushButton_2.clicked.connect(self.upload_orders)
@@ -57,6 +64,22 @@ class MyApp(QMainWindow, Ui_MainWindow):
         self.orders_file_path = ""
         self.time_entries_file_path = ""
 
+        # Initialize progress bars to 0%
+        self.progressBar_3.setValue(0)
+        self.progressBar_2.setValue(0)
+        self.progressBar.setValue(0)
+
+    def update_point_system_table(self):
+        # Get the selected point system from the dropdown
+        selected_system = self.pointSystemDropdown.currentText()
+        point_system = POINT_SYSTEMS[selected_system]
+
+        # Update the table to reflect the roles and points of the selected system
+        self.pointsTable.setRowCount(len(point_system))
+        for row, (role, points) in enumerate(point_system.items()):
+            self.pointsTable.setItem(row, 0, QTableWidgetItem(role))
+            self.pointsTable.setItem(row, 1, QTableWidgetItem(str(points)))
+
     def upload_time_entries(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Select Time Entries CSV File", "",
                                                   "CSV files (*.csv);;All files (*)")
@@ -67,17 +90,23 @@ class MyApp(QMainWindow, Ui_MainWindow):
             if error_msg:
                 self.ErrorTracebackBox.setText(error_msg)
                 return
-            self.statusbar.showMessage("Time entries file uploaded successfully!")
+            self.progressBar_3.setValue(100)  # Update the progress bar value
+            self.label_6.setText("Time entries file uploaded successfully!")
 
     def upload_orders(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Select Orders CSV File", "",
                                                   "CSV files (*.csv);;All files (*)")
         if filepath:
             self.orders_file_path = filepath
-            self.statusbar.showMessage("Orders file uploaded successfully!")
+            self.progressBar_2.setValue(100)  # Update the progress bar value
+            self.label_6.setText("Orders file uploaded successfully!")
 
     def distribute_tips_weekly(self):
         try:
+            # 1. Get the chosen point system from the dropdown
+            chosen_system = self.pointSystemDropdown.currentText()
+            point_system = POINT_SYSTEMS[chosen_system]
+
             orders_df, error_msg = read_csv_data(self.orders_file_path)
             if error_msg:
                 raise Exception(error_msg)
@@ -87,11 +116,12 @@ class MyApp(QMainWindow, Ui_MainWindow):
             if error_msg:
                 raise Exception(error_msg)
 
+            # 2. Pass this point system to the distribute_tips_among_employees_for_week function
             self.employee_weekly_cuts = distribute_tips_among_employees_for_week(
                 weekly_tip_pools,
                 lunch_hours_per_week,
                 dinner_hours_per_week,
-                role_pool_points,
+                point_system,  # Passing the chosen point system
                 time_entries_df
             )
             self.statusbar.showMessage("Tips distributed successfully!")
@@ -127,7 +157,7 @@ class MyApp(QMainWindow, Ui_MainWindow):
             # Automatically open the file using the default application
             os.startfile(output_path)
 
-            self.statusbar.showMessage(f"Employee weekly cuts have been saved to {output_path}.")
+            self.label_6.setText(f"Employee weekly cuts have been saved to {output_path}.")
 
         except Exception as e:
             error_message = f"An error occurred: {str(e)}\n\n{traceback.format_exc()}"
